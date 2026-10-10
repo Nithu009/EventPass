@@ -1,0 +1,38 @@
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Node.js
+node_modules/
+dist/
+dist-ssr/
+*.local
+.npm/
+
+# Java & Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.logs
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE & Editor files
+.idea/
+*.iml
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment & Credentials
+.env
+.env.local
+.env.production
+*.pem
+*.key
+application-secrets.yml

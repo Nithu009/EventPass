@@ -1,0 +1,35 @@
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+spring:
+  application:
+    name: eventpass-backend
+
+  data:
+    mongodb:
+      # MongoDB Atlas Connection URI
+      uri: ${MONGODB_URI:mongodb+srv://24eg112b11_db_user:c3lghLproxXeuGbM@eventpasscluster.vw7pnzn.mongodb.net/eventpass?retryWrites=true&w=majority&appName=EventPassCluster}
+      auto-index-creation: true
+
+# Custom EventPass Application Properties
+eventpass:
+  jwt:
+    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000} # 24 hours
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+  payment:
+    key-id: ${PAYMENT_KEY_ID:rzp_test_placeholder}
+    key-secret: ${PAYMENT_KEY_SECRET:rzp_test_placeholder_secret}
+    webhook-secret: ${PAYMENT_WEBHOOK_SECRET:placeholder_secret}
+
+# SpringDoc OpenAPI / Swagger
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
