@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import api, { backendBaseUrl } from '../services/api';
+import api, { BACKEND_ORIGIN } from '../services/api';
 
 import { 
   Search, 
@@ -49,11 +49,11 @@ export const HomePage = () => {
 
   useEffect(() => {
     // Health probe — hits the root-level /healthz endpoint directly (not /api/healthz)
-    // so the URL resolves to https://eventpass-8c66.onrender.com/healthz in production
-    // and /api/healthz via the Vite proxy in local dev (backendBaseUrl is '' in dev).
-    const healthUrl = backendBaseUrl
-      ? `${backendBaseUrl}/healthz`
-      : '/api/healthz'; // dev fallback via Vite proxy
+    // BACKEND_ORIGIN is '' in dev (falls back to /api/healthz via Vite proxy)
+    // and 'https://eventpass-8c66.onrender.com' in production.
+    const healthUrl = BACKEND_ORIGIN
+      ? `${BACKEND_ORIGIN}/healthz`
+      : '/api/healthz'; // dev: Vite proxy handles /api/healthz
 
     axios.get(healthUrl, { timeout: 10000 })
       .then(() => {

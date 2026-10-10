@@ -1,45 +1,50 @@
 import axios from 'axios';
 
 // ---------------------------------------------------------------------------
-// Base URL resolution
+// API Base URL — single source of truth
 // ---------------------------------------------------------------------------
-// VITE_API_BASE_URL must be set in the Vercel dashboard (Production scope) as:
-//   https://eventpass-8c66.onrender.com/api
-// In local dev, VITE_API_BASE_URL is not set; Vite proxies /api → localhost:8080.
+// STRATEGY:
+//   Development  → '/api'  (Vite dev-server proxy forwards to localhost:8080)
+//   Production   → absolute Render URL  (never relies on an env var that could
+//                  accidentally contain "localhost")
+//
+// WHY NOT VITE_API_BASE_URL?
+//   If the Vercel dashboard env var is accidentally set to http://localhost:8080/api
+//   (copied from .env.example), it overrides the .env.production file and bakes
+//   localhost into the production bundle.  By resolving the URL in code using
+//   import.meta.env.DEV (which Vite bakes in at build time as a boolean), we
+//   guarantee the correct URL regardless of any dashboard variable.
 // ---------------------------------------------------------------------------
 
-const PRODUCTION_BACKEND = 'https://eventpass-8c66.onrender.com';
+/** Deployed Render backend — no trailing slash. */
+const RENDER_BACKEND = 'https://eventpass-8c66.onrender.com';
 
 /**
- * Full API base URL including the /api segment.
- * Used as the axios baseURL for all REST calls.
+ * Base URL for all /api/* REST calls.
+ *  - DEV build  → '/api'  (Vite proxy rewrites to http://localhost:8080/api)
+ *  - PROD build → 'https://eventpass-8c66.onrender.com/api'
  */
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
-  ? import.meta.env.VITE_API_BASE_URL          // set by Vercel env var in production
-  : import.meta.env.DEV
-    ? '/api'                                    // local dev → Vite proxy → localhost:8080
-    : `${PRODUCTION_BACKEND}/api`;             // hard production fallback (no localhost)
+const API_BASE = import.meta.env.DEV
+  ? '/api'
+  : `${RENDER_BACKEND}/api`;
 
 /**
- * Backend root URL (without /api) — used for root-level probes such as GET /healthz.
- * Derived from VITE_API_BASE_URL by stripping the trailing /api segment so that
- * the health check hits https://eventpass-8c66.onrender.com/healthz, not /api/healthz.
+ * Backend root (no /api suffix) — used for the root-level health probe /healthz.
+ *  - DEV build  → '' (relative, handled via Vite proxy at /api/healthz)
+ *  - PROD build → 'https://eventpass-8c66.onrender.com'
  */
-export const backendBaseUrl = import.meta.env.VITE_API_BASE_URL
-  ? import.meta.env.VITE_API_BASE_URL.replace(/\/api$/, '')
-  : import.meta.env.DEV
-    ? ''          // dev: health check → same origin (proxied via /healthz isn't proxied, use /api/healthz)
-    : PRODUCTION_BACKEND;
+export const BACKEND_ORIGIN = import.meta.env.DEV ? '' : RENDER_BACKEND;
 
+// ---------------------------------------------------------------------------
+// Axios instance
+// ---------------------------------------------------------------------------
 const api = axios.create({
-  baseURL: apiBaseUrl,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: API_BASE,
+  headers: { 'Content-Type': 'application/json' },
   timeout: 15000,
 });
 
-// Request Interceptor: Attach JWT Bearer Token
+// Request interceptor — attach JWT Bearer token if present
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('eventpass_token');
@@ -51,12 +56,11 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Handle Global HTTP Errors
+// Response interceptor — unwrap data; handle 401 globally
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
     if (error.response) {
-      // Token expired or invalid
       if (error.response.status === 401) {
         localStorage.removeItem('eventpass_token');
         localStorage.removeItem('eventpass_user');
@@ -64,7 +68,10 @@ api.interceptors.response.use(
       }
       return Promise.reject(error.response.data || error.message);
     }
-    return Promise.reject({ message: 'Network connection error. Please verify the backend is running.' });
+    // Network error / CORS failure / backend offline
+    return Promise.reject({
+      message: 'Network connection error. Please verify the backend is running.',
+    });
   }
 );
 
