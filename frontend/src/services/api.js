@@ -1,7 +1,19 @@
 import axios from 'axios';
 
+const getApiBaseUrl = () => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  // Local development uses the Vite dev server proxy at /api
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+  // Production fallback to the deployed Render backend
+  return 'https://eventpass-8c66.onrender.com/api';
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },

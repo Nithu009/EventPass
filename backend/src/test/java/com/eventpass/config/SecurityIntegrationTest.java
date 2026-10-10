@@ -13,8 +13,10 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -33,9 +35,33 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    void apiHealthz_isPublic() throws Exception {
+        mockMvc.perform(get("/api/healthz"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("OK"));
+    }
+
+    @Test
     void apiHealth_isPublic() throws Exception {
         mockMvc.perform(get("/api/health"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void cors_allowsVercelFrontendOrigin() throws Exception {
+        mockMvc.perform(options("/api/events")
+                        .header("Origin", "https://event-pass-mauve.vercel.app")
+                        .header("Access-Control-Request-Method", "GET"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "https://event-pass-mauve.vercel.app"));
+    }
+
+    @Test
+    void cors_doesNotAllowArbitraryOrigin() throws Exception {
+        mockMvc.perform(options("/api/events")
+                        .header("Origin", "https://malicious-site.com")
+                        .header("Access-Control-Request-Method", "GET"))
+                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
     }
 
     @Test

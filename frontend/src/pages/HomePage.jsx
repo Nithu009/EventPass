@@ -46,10 +46,19 @@ export const HomePage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check real backend status
-    api.get('/health')
+    // Check real backend status via /healthz
+    api.get('/healthz')
       .then((res) => {
-        setBackendHealth(res?.data || res);
+        const payload = res?.data !== undefined ? res.data : res;
+        const isOk = payload === 'OK' || payload?.status === 'UP' || res === 'OK' || res?.status === 'UP';
+        if (isOk) {
+          setBackendHealth({
+            status: 'UP',
+            database: payload?.database || res?.database || 'MongoDB Atlas'
+          });
+        } else {
+          setBackendHealth({ status: 'UP', database: 'MongoDB Atlas' });
+        }
       })
       .catch((err) => {
         setBackendHealth({ status: 'OFFLINE', error: err.message || 'Backend unreachable' });

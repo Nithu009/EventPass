@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class LivenessController {
 
-    @GetMapping("/healthz")
+    @GetMapping({"/healthz", "/api/healthz"})
     public ResponseEntity<String> healthz() {
         return ResponseEntity.ok("OK");
     }
