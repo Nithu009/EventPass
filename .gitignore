@@ -23,6 +23,9 @@ target/
 .idea/
 *.iml
 .vscode/
+bin/
+.project
+.settings/
 *.suo
 *.ntvs*
 *.njsproj

@@ -48,7 +48,7 @@ public class AdminDashboardService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         long ticketsIssued = ticketRepository.count();
-        long ticketsCheckedIn = ticketRepository.countByUsedTrue();
+        long ticketsCheckedIn = ticketRepository.countByScannedTrue();
 
         return new AdminStatsDto(
                 totalEvents,

@@ -65,8 +65,9 @@ public class SecurityConfig {
                     "/swagger-resources/**", "/webjars/**"
                 ).permitAll()
 
-                // Public health check
-                .requestMatchers("/api/health/**").permitAll()
+                // Public health checks (Render / load balancers use GET /healthz)
+                .requestMatchers(HttpMethod.GET, "/healthz").permitAll()
+                .requestMatchers("/api/health", "/api/health/**").permitAll()
 
                 // Public auth endpoints
                 .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
