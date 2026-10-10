@@ -1,19 +1,38 @@
 import axios from 'axios';
 
-const getApiBaseUrl = () => {
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
-  }
-  // Local development uses the Vite dev server proxy at /api
-  if (import.meta.env.DEV) {
-    return '/api';
-  }
-  // Production fallback to the deployed Render backend
-  return 'https://eventpass-8c66.onrender.com/api';
-};
+// ---------------------------------------------------------------------------
+// Base URL resolution
+// ---------------------------------------------------------------------------
+// VITE_API_BASE_URL must be set in the Vercel dashboard (Production scope) as:
+//   https://eventpass-8c66.onrender.com/api
+// In local dev, VITE_API_BASE_URL is not set; Vite proxies /api → localhost:8080.
+// ---------------------------------------------------------------------------
+
+const PRODUCTION_BACKEND = 'https://eventpass-8c66.onrender.com';
+
+/**
+ * Full API base URL including the /api segment.
+ * Used as the axios baseURL for all REST calls.
+ */
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
+  ? import.meta.env.VITE_API_BASE_URL          // set by Vercel env var in production
+  : import.meta.env.DEV
+    ? '/api'                                    // local dev → Vite proxy → localhost:8080
+    : `${PRODUCTION_BACKEND}/api`;             // hard production fallback (no localhost)
+
+/**
+ * Backend root URL (without /api) — used for root-level probes such as GET /healthz.
+ * Derived from VITE_API_BASE_URL by stripping the trailing /api segment so that
+ * the health check hits https://eventpass-8c66.onrender.com/healthz, not /api/healthz.
+ */
+export const backendBaseUrl = import.meta.env.VITE_API_BASE_URL
+  ? import.meta.env.VITE_API_BASE_URL.replace(/\/api$/, '')
+  : import.meta.env.DEV
+    ? ''          // dev: health check → same origin (proxied via /healthz isn't proxied, use /api/healthz)
+    : PRODUCTION_BACKEND;
 
 const api = axios.create({
-  baseURL: getApiBaseUrl(),
+  baseURL: apiBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   },

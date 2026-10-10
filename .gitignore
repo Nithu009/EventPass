@@ -33,9 +33,10 @@ bin/
 *.sw?
 
 # Environment & Credentials
+# .env.production is intentionally NOT ignored — it holds only a public API URL,
+# no secrets. Real secrets go in .env.local (which stays ignored).
 .env
 .env.local
-.env.production
 *.pem
 *.key
 application-secrets.yml

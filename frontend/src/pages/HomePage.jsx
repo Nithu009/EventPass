@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import axios from 'axios';
+import api, { backendBaseUrl } from '../services/api';
+
 import { 
   Search, 
   Calendar, 
@@ -46,19 +48,16 @@ export const HomePage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check real backend status via /healthz
-    api.get('/healthz')
-      .then((res) => {
-        const payload = res?.data !== undefined ? res.data : res;
-        const isOk = payload === 'OK' || payload?.status === 'UP' || res === 'OK' || res?.status === 'UP';
-        if (isOk) {
-          setBackendHealth({
-            status: 'UP',
-            database: payload?.database || res?.database || 'MongoDB Atlas'
-          });
-        } else {
-          setBackendHealth({ status: 'UP', database: 'MongoDB Atlas' });
-        }
+    // Health probe — hits the root-level /healthz endpoint directly (not /api/healthz)
+    // so the URL resolves to https://eventpass-8c66.onrender.com/healthz in production
+    // and /api/healthz via the Vite proxy in local dev (backendBaseUrl is '' in dev).
+    const healthUrl = backendBaseUrl
+      ? `${backendBaseUrl}/healthz`
+      : '/api/healthz'; // dev fallback via Vite proxy
+
+    axios.get(healthUrl, { timeout: 10000 })
+      .then(() => {
+        setBackendHealth({ status: 'UP', database: 'MongoDB Atlas' });
       })
       .catch((err) => {
         setBackendHealth({ status: 'OFFLINE', error: err.message || 'Backend unreachable' });
@@ -67,14 +66,15 @@ export const HomePage = () => {
         setLoadingHealth(false);
       });
 
-    // Fetch all published events
+    // Fetch all published events via the /api/events endpoint
     api.get('/events')
       .then((res) => {
-        const list = Array.isArray(res?.data) 
-          ? res.data 
-          : Array.isArray(res) 
-          ? res 
-          : (res?.data?.content || []);
+        // api.js response interceptor unwraps response.data, so res is already the payload
+        const list = Array.isArray(res)
+          ? res
+          : Array.isArray(res?.content)
+          ? res.content
+          : [];
         setEvents(list);
       })
       .catch((err) => {
@@ -85,6 +85,7 @@ export const HomePage = () => {
         setLoadingEvents(false);
       });
   }, []);
+
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
